@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/dashboard_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,8 +18,17 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.deepPurple,
         useMaterial3: true,
       ),
-      home:  LoginScreen(),
       debugShowCheckedModeBanner: false,
+
+      // 🟡 Inisialisasi halaman pertama saat app dibuka
+      home: const LoginScreen(),
+
+      // ✅ Tambahkan semua route yang dibutuhkan
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) =>  RegisterScreen(),
+        '/dashboard': (context) =>  DashboardScreen(),
+      },
     );
   }
 }

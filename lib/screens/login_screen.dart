@@ -1,50 +1,55 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'register_screen.dart';
-import '../widgets/custom_input.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({Key? key}) : super(key: key);
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  bool isLoading = false;
+  bool _isLoading = false;
   String? errorMessage;
 
-  void _login() async {
-    if (!_formKey.currentState!.validate()) return;
+  void loginUser() async {
+    print("🚀 loginUser dipanggil"); // <- PASTI tampil kalau tombol ditekan
+
+    if (!_formKey.currentState!.validate()) {
+      print("⚠️ Form tidak valid");
+      return;
+    }
+
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    print('📧 Email: $email');
+    print('🔒 Password: $password');
 
     setState(() {
-      isLoading = true;
+      _isLoading = true;
       errorMessage = null;
     });
 
-    final message = await AuthService().login(
-      emailController.text.trim(),
-      passwordController.text.trim(),
-    );
+    final response = await AuthService().login(email, password);
 
-    setState(() {
-      isLoading = false;
-    });
+    if (!mounted) return;
 
-    if (message == null) {
-      // Login berhasil
+    setState(() => _isLoading = false);
+
+    print("📥 Response: $response");
+
+    if (response['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login berhasil")),
+        SnackBar(content: Text(response['message'])),
       );
-      // TODO: Ganti dengan navigasi ke halaman utama
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
+      Navigator.pushReplacementNamed(context, '/dashboard');
     } else {
-      setState(() {
-        errorMessage = message;
-      });
+      setState(() => errorMessage = response['message']);
     }
   }
 
@@ -57,60 +62,74 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print("🔁 build() dipanggil"); // <-- Debug juga build-nya
+
     return Scaffold(
-      appBar: AppBar(title: Text("Login")),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              CustomInput(
-                controller: emailController,
-                hint: 'Email',
-                validator: (value) {
-                  if (value!.isEmpty) return 'Email tidak boleh kosong';
-                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                  if (!emailRegex.hasMatch(value)) return 'Format email salah';
-                  return null;
-                },
-              ),
-              CustomInput(
-                controller: passwordController,
-                hint: 'Password',
-                obscureText: true,
-                validator: (value) {
-                  if (value!.isEmpty) return 'Password tidak boleh kosong';
-                  if (value.length < 6) return 'Minimal 6 karakter';
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              if (errorMessage != null)
-                Text(errorMessage!,
-                    style: TextStyle(color: Colors.red, fontSize: 14)),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: isLoading ? null : _login,
-                child: isLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text("Login"),
-              ),
-              SizedBox(height: 10),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => RegisterScreen()),
-                  );
-                },
-                child: Text("Belum punya akun? Daftar"),
-              ),
-            ],
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const Text("Login", style: TextStyle(fontSize: 28)),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: "Email",
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Email wajib diisi';
+                    }
+                    final regex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (!regex.hasMatch(value.trim())) {
+                      return 'Format email tidak valid';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: passwordController,
+                  decoration: const InputDecoration(
+                    labelText: "Password",
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Password wajib diisi';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                if (errorMessage != null)
+                  Text(errorMessage!, style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 20),
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton(
+                        onPressed: () {
+                          print("🟢 Tombol Login ditekan");
+                          loginUser();
+                        },
+                        child: const Text("Login"),
+                      ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/register');
+                  },
+                  child: const Text("Belum punya akun? Daftar"),
+                ),
+              ],
+            ),
           ),
         ),
       ),

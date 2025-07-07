@@ -3,8 +3,10 @@ import '../services/auth_service.dart';
 import '../widgets/custom_input.dart';
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({Key? key}) : super(key: key);
+
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
@@ -18,40 +20,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? errorMessage;
   String? successMessage;
 
-  void _register() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _register() async {
+  if (!_formKey.currentState!.validate()) return;
 
+  setState(() {
+    isLoading = true;
+    errorMessage = null;
+    successMessage = null;
+  });
+
+  final response = await AuthService().register(
+    nameController.text.trim(),
+    emailController.text.trim(),
+    passwordController.text.trim(),
+  );
+
+  if (!mounted) return;
+
+  setState(() {
+    isLoading = false;
+  });
+
+  if (response['success']) {
     setState(() {
-      isLoading = true;
+      successMessage = response['message'];
       errorMessage = null;
+    });
+
+    nameController.clear();
+    emailController.clear();
+    passwordController.clear();
+  } else {
+    setState(() {
+      errorMessage = response['message'];
       successMessage = null;
     });
-
-    final message = await AuthService().register(
-      nameController.text.trim(),
-      emailController.text.trim(),
-      passwordController.text.trim(),
-    );
-
-    setState(() {
-      isLoading = false;
-    });
-
-    if (message != null && message.toLowerCase().contains("berhasil")) {
-      setState(() {
-        successMessage = message;
-        errorMessage = null;
-      });
-      nameController.clear();
-      emailController.clear();
-      passwordController.clear();
-    } else {
-      setState(() {
-        errorMessage = message ?? "Terjadi kesalahan";
-        successMessage = null;
-      });
-    }
   }
+}
+
 
   @override
   void dispose() {
@@ -64,9 +70,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Register")),
+      appBar: AppBar(title: const Text("Register")),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -75,45 +81,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: nameController,
                 hint: 'Nama Lengkap',
                 validator: (value) =>
-                    value!.isEmpty ? 'Nama tidak boleh kosong' : null,
+                    value == null || value.isEmpty ? 'Nama tidak boleh kosong' : null,
               ),
+              const SizedBox(height: 16),
               CustomInput(
                 controller: emailController,
                 hint: 'Email',
                 validator: (value) {
-                  if (value!.isEmpty) return 'Email tidak boleh kosong';
+                  if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
                   final emailReg = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
                   if (!emailReg.hasMatch(value)) return 'Format email salah';
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
               CustomInput(
                 controller: passwordController,
                 hint: 'Password',
                 obscureText: true,
                 validator: (value) {
-                  if (value!.isEmpty) return 'Password tidak boleh kosong';
+                  if (value == null || value.isEmpty) return 'Password tidak boleh kosong';
                   if (value.length < 6) return 'Minimal 6 karakter';
                   return null;
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 24),
               if (errorMessage != null)
                 Text(errorMessage!,
-                    style: TextStyle(color: Colors.red, fontSize: 14)),
+                    style: const TextStyle(color: Colors.red, fontSize: 14)),
               if (successMessage != null)
                 Text(successMessage!,
-                    style: TextStyle(color: Colors.green, fontSize: 14)),
-              SizedBox(height: 20),
+                    style: const TextStyle(color: Colors.green, fontSize: 14)),
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: isLoading ? null : _register,
                 child: isLoading
-                    ? SizedBox(
+                    ? const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text("Register"),
+                    : const Text("Register"),
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushReplacementNamed(context, '/login');
+                },
+                child: const Text(
+                  "Sudah punya akun? Login",
+                  style: TextStyle(color: Colors.blue),
+                ),
               ),
             ],
           ),
