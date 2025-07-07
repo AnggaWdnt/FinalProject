@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resepin/screens/category_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -25,10 +26,12 @@ class MyApp extends StatelessWidget {
 
       // ✅ Tambahkan semua route yang dibutuhkan
       routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) =>  RegisterScreen(),
-        '/dashboard': (context) =>  DashboardScreen(),
-      },
+  '/login': (context) => const LoginScreen(),
+  '/register': (context) => RegisterScreen(),
+  // jangan tambahkan dashboard di sini jika pakai push manual dengan userData
+  '/categories': (context) => CategoryScreen(),
+},
+
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resepin/screens/dashboard_screen.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -37,6 +38,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final response = await AuthService().login(email, password);
 
+    print("📥 Data user: ${response['user']}");
+
     if (!mounted) return;
 
     setState(() => _isLoading = false);
@@ -47,7 +50,14 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(response['message'])),
       );
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      Navigator.pushReplacement(
+       context,
+       MaterialPageRoute(
+         builder: (context) => DashboardScreen(userData: response['user']),
+  ),
+);
+
+
     } else {
       setState(() => errorMessage = response['message']);
     }
