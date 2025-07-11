@@ -2,47 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class CategoryScreen extends StatefulWidget {
-  const CategoryScreen({super.key});
+import 'food_list_screen.dart';
 
+class CategoryScreen extends StatefulWidget {
   @override
-  State<CategoryScreen> createState() => _CategoryScreenState();
+  _CategoryScreenState createState() => _CategoryScreenState();
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
   List categories = [];
-  final TextEditingController _controller = TextEditingController();
-
-  final String baseUrl = "http://10.0.2.2/resepin_api";
-
-  Future<void> fetchCategories() async {
-    final res = await http.get(Uri.parse('$baseUrl/get_categories.php'));
-    final data = jsonDecode(res.body);
-
-    if (data['status'] == 'success') {
-      setState(() {
-        categories = data['data'];
-      });
-    }
-  }
-
-  Future<void> addCategory() async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/add_category.php'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"name": _controller.text}),
-    );
-    final data = jsonDecode(res.body);
-
-    if (data['status'] == 'success') {
-      _controller.clear();
-      fetchCategories();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'])),
-      );
-    }
-  }
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -50,39 +19,52 @@ class _CategoryScreenState extends State<CategoryScreen> {
     fetchCategories();
   }
 
+  Future<void> fetchCategories() async {
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8000/api/categories'),
+      headers: {'Accept': 'application/json'},
+    );
+    
+    if (response.statusCode == 200) {
+      setState(() {
+        categories = json.decode(response.body);
+        isLoading = false;
+      });
+    } else {
+      throw Exception('Gagal memuat data kategori');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Kategori Resep")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                labelText: "Nama Kategori",
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: addCategory,
-                ),
-              ),
+      appBar: AppBar(title: Text('Kategori Makanan')),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final kategori = categories[index];
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  child: ListTile(
+                    title: Text(kategori['name']),
+                    trailing: Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FoodListScreen(
+                            categoryId: kategori['id'],
+                            categoryName: kategori['name'],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final item = categories[index];
-                  return ListTile(
-                    title: Text(item['name']),
-                  );
-                },
-              ),
-            )
-          ],
-        ),
-      ),
     );
   }
 }
