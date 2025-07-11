@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:resepin/screens/login_screen.dart';
+import 'package:resepin/screens/register_screen.dart';
+import 'package:resepin/screens/dashboard_screen.dart';
 import 'package:resepin/screens/category_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
-import 'screens/dashboard_screen.dart';
+import 'package:resepin/screens/daily_log_screen.dart';
+import 'package:resepin/screens/recipe_screen.dart';
+import 'package:resepin/screens/profile_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,7 +13,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -20,18 +23,17 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-
-      // 🟡 Inisialisasi halaman pertama saat app dibuka
       home: const LoginScreen(),
-
-      // ✅ Tambahkan semua route yang dibutuhkan
       routes: {
-  '/login': (context) => const LoginScreen(),
-  '/register': (context) => RegisterScreen(),
-  // jangan tambahkan dashboard di sini jika pakai push manual dengan userData
-  '/categories': (context) => CategoryScreen(),
-},
-
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => RegisterScreen(),
+        '/dashboard': (context) => const DashboardScreen(userData: {}),
+        '/categories': (context) => CategoryScreen(),
+        '/daily-log': (context) => DailyLogScreen(),
+        '/recipes': (context) => RecipeScreen(),
+        '/profile': (context) => ProfileScreen(),
+        '/favorites': (context) => RecipeScreen(), // sementara ke RecipeScreen
+      },
     );
   }
 }
