@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../widgets/custom_input.dart';
+import 'login_screen.dart'; // Import login screen
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -21,43 +21,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? successMessage;
 
   Future<void> _register() async {
-  if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return;
 
-  setState(() {
-    isLoading = true;
-    errorMessage = null;
-    successMessage = null;
-  });
-
-  final response = await AuthService().register(
-    nameController.text.trim(),
-    emailController.text.trim(),
-    passwordController.text.trim(),
-  );
-
-  if (!mounted) return;
-
-  setState(() {
-    isLoading = false;
-  });
-
-  if (response['success']) {
     setState(() {
-      successMessage = response['message'];
+      isLoading = true;
       errorMessage = null;
-    });
-
-    nameController.clear();
-    emailController.clear();
-    passwordController.clear();
-  } else {
-    setState(() {
-      errorMessage = response['message'];
       successMessage = null;
     });
-  }
-}
 
+    try {
+      final response = await AuthService().register(
+        nameController.text.trim(),
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      if (response['status'] == 'success') {
+        setState(() {
+          successMessage = response['message'] ?? 'Registrasi berhasil! Silakan login.';
+          errorMessage = null;
+        });
+        nameController.clear();
+        emailController.clear();
+        passwordController.clear();
+      }
+      
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString().replaceFirst("Exception: ", "");
+        successMessage = null;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -76,17 +79,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CustomInput(
+              // ... (TextFormField Anda tetap sama)
+              TextFormField(
                 controller: nameController,
-                hint: 'Nama Lengkap',
+                decoration: const InputDecoration(labelText: 'Nama Lengkap'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Nama tidak boleh kosong' : null,
               ),
               const SizedBox(height: 16),
-              CustomInput(
+              TextFormField(
                 controller: emailController,
-                hint: 'Email',
+                decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
                   final emailReg = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -95,9 +101,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              CustomInput(
+              TextFormField(
                 controller: passwordController,
-                hint: 'Password',
+                decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Password tidak boleh kosong';
@@ -107,31 +113,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 24),
               if (errorMessage != null)
-                Text(errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 14)),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(errorMessage!,
+                      style: const TextStyle(color: Colors.red, fontSize: 14),
+                      textAlign: TextAlign.center),
+                ),
               if (successMessage != null)
-                Text(successMessage!,
-                    style: const TextStyle(color: Colors.green, fontSize: 14)),
-              const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(successMessage!,
+                      style: const TextStyle(color: Colors.green, fontSize: 14),
+                      textAlign: TextAlign.center),
+                ),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: isLoading ? null : _register,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
                 child: isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Text("Register"),
               ),
               const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, '/login');
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                      context, MaterialPageRoute(builder: (context) => const LoginScreen()));
                 },
-                child: const Text(
-                  "Sudah punya akun? Login",
-                  style: TextStyle(color: Colors.blue),
-                ),
+                child: const Text("Sudah punya akun? Login"),
               ),
             ],
           ),

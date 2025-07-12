@@ -19,20 +19,20 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Resepin',
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
+        colorSchemeSeed: Colors.deepPurple,
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
       home: const LoginScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/register': (context) => RegisterScreen(),
-        '/dashboard': (context) => const DashboardScreen(userData: {}),
-        '/categories': (context) => CategoryScreen(),
-        '/daily-log': (context) => DailyLogScreen(),
-        '/recipes': (context) => RecipeScreen(),
-        '/profile': (context) => ProfileScreen(),
-        '/favorites': (context) => RecipeScreen(), // sementara ke RecipeScreen
+        '/register': (context) => const RegisterScreen(),
+        // PERBAIKAN UTAMA: Hapus parameter userData
+        '/dashboard': (context) => const DashboardScreen(),
+        '/categories': (context) =>  CategoryScreen(),
+        '/daily-log': (context) => const DailyLogScreen(),
+        '/recipes': (context) =>  RecipeScreen(),
+        '/profile': (context) =>  ProfileScreen(),
       },
     );
   }

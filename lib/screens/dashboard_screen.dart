@@ -1,21 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_screen.dart'; 
+import '../services/auth_service.dart';
 
-class DashboardScreen extends StatelessWidget {
-  final Map<String, dynamic> userData;
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({Key? key}) : super(key: key);
 
-  const DashboardScreen({super.key, required this.userData});
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  String userName = 'Tamu'; // Nilai default
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      // Baca nama user yang sudah disimpan saat login
+      userName = prefs.getString('user_name') ?? 'Tamu';
+    });
+  }
+
+  Future<void> _logout() async {
+    // Panggil service untuk menghapus token
+    await AuthService().logout();
+    
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Dashboard"),
+        title: const Text("Dashboard"),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
           )
         ],
       ),
@@ -25,37 +57,33 @@ class DashboardScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Selamat datang, ${userData['name'] ?? 'User'}",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              "Selamat datang, $userName",
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
-            Text("Hari ini Udah Hidup Sehat belum?"),
-            SizedBox(height: 32),
-
+            const SizedBox(height: 8),
+            const Text("Hari ini Udah Hidup Sehat belum?"),
+            const SizedBox(height: 32),
             GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, '/categories');
               },
               child: _buildCard(Icons.list, Colors.green, "Lihat Kategori Makanan"),
             ),
-            SizedBox(height: 16),
-
+            const SizedBox(height: 16),
             GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, '/daily-log');
               },
               child: _buildCard(Icons.fastfood, Colors.orange, "Log Makanan & Minuman Harian"),
             ),
-            SizedBox(height: 16),
-
+            const SizedBox(height: 16),
             GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, '/recipes');
               },
               child: _buildCard(Icons.menu_book, Colors.blue, "Resep"),
             ),
-            SizedBox(height: 16),
-
+            const SizedBox(height: 16),
             GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, '/profile');
@@ -73,12 +101,12 @@ class DashboardScreen extends StatelessWidget {
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Icon(icon, color: color),
-            SizedBox(width: 12),
-            Text(title, style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 12),
+            Text(title, style: const TextStyle(fontSize: 16)),
           ],
         ),
       ),
