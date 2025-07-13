@@ -1,10 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:resepin/cubits/daily_log_cubit.dart';
+import 'package:geolocator/geolocator.dart';
 
 class AddLogScreen extends StatefulWidget {
-  final String token;
-  const AddLogScreen({super.key, required this.token});
+  const AddLogScreen({Key? key}) : super(key: key);
 
   @override
   State<AddLogScreen> createState() => _AddLogScreenState();
@@ -14,71 +16,143 @@ class _AddLogScreenState extends State<AddLogScreen> {
   final _formKey = GlobalKey<FormState>();
   final _foodNameController = TextEditingController();
   final _portionController = TextEditingController();
-  final _dateController = TextEditingController();
-
+  final _caloriesController = TextEditingController();
   String _selectedUnit = 'gram';
+  File? _imageFile;
   bool _isSubmitting = false;
-  final String baseUrl = 'http://10.0.2.2:8000/api';
+
+  double? _latitude;
+  double? _longitude;
+
+  final List<String> _unitOptions = ['gram', 'ml', 'pcs'];
 
   @override
   void initState() {
     super.initState();
-    _dateController.text = DateTime.now().toIso8601String().split('T').first;
+    _getCurrentLocation();
   }
 
   @override
   void dispose() {
     _foodNameController.dispose();
     _portionController.dispose();
-    _dateController.dispose();
+    _caloriesController.dispose();
     super.dispose();
   }
 
-  Future<void> _submitLog() async {
-    // Jalankan validasi form terlebih dahulu
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Cek apakah GPS aktif
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ Lokasi tidak aktif. Aktifkan GPS!')),
+      );
       return;
     }
-    
-    setState(() => _isSubmitting = true);
 
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/daily-logs'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${widget.token}',
-        },
-        body: {
-          'food_name': _foodNameController.text.trim(),
-          'portion': _portionController.text.trim(),
-          'unit': _selectedUnit,
-          'date': _dateController.text.trim(),
-        },
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 201) {
+    // Cek izin akses lokasi
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Log berhasil ditambahkan!')),
+          const SnackBar(content: Text('⚠️ Izin lokasi ditolak')),
         );
-        Navigator.pop(context, true); // Kirim 'true' untuk menandakan sukses
-      } else {
-        final error = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal: ${error['message'] ?? 'Server error'}')),
-        );
-      }
-    } catch (e) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi error: ${e.toString()}')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
+        return;
       }
     }
+
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ Izin lokasi permanen ditolak')),
+      );
+      return;
+    }
+
+    // Ambil lokasi
+    final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+
+    setState(() {
+      _latitude = position.latitude;
+      _longitude = position.longitude;
+    });
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: const Text('Ambil Foto'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitLog() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_latitude == null || _longitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('📍 Lokasi belum tersedia, coba lagi')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final foodName = _foodNameController.text.trim();
+    final portion = int.tryParse(_portionController.text.trim()) ?? 0;
+    final calories = int.tryParse(_caloriesController.text.trim()) ?? 0;
+
+    await context.read<DailyLogCubit>().addDailyLog(
+      foodName: foodName,
+      portion: portion,
+      unit: _selectedUnit,
+      calories: calories,
+      photo: _imageFile,
+      latitude: _latitude,
+      longitude: _longitude,
+    );
+
+    setState(() => _isSubmitting = false);
+
+    if (!mounted) return;
+
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('✅ Log berhasil ditambahkan')),
+    );
   }
 
   @override
@@ -86,95 +160,78 @@ class _AddLogScreenState extends State<AddLogScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Tambah Log Harian')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              GestureDetector(
+                onTap: _showImagePickerOptions,
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade400),
+                  ),
+                  child: _imageFile != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(_imageFile!, fit: BoxFit.cover),
+                        )
+                      : const Center(
+                          child: Icon(Icons.camera_alt, size: 50, color: Colors.grey),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _foodNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Makanan/Minuman',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (val) => val == null || val.isEmpty ? 'Nama tidak boleh kosong' : null,
+                decoration: const InputDecoration(labelText: 'Nama Makanan / Minuman'),
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? '⚠ Nama makanan wajib diisi' : null,
               ),
               const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3, // Beri ruang lebih untuk angka
-                    child: TextFormField(
-                      controller: _portionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Porsi',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (val) => val == null || val.isEmpty ? 'Porsi tidak boleh kosong' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2, // Ruang lebih kecil untuk satuan
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedUnit,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
-                      items: ['gram', 'ml'].map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedUnit = newValue;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                ],
+              DropdownButtonFormField<String>(
+                value: _selectedUnit,
+                items: _unitOptions
+                    .map((unit) => DropdownMenuItem(value: unit, child: Text(unit.toUpperCase())))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedUnit = val);
+                },
+                decoration: const InputDecoration(labelText: 'Satuan (gram/ml/pcs)'),
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _dateController,
+                controller: _portionController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Porsi'),
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? '⚠ Porsi wajib diisi' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _caloriesController,
+                keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Tanggal (YYYY-MM-DD)',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today),
+                  labelText: 'Kalori (kcal)',
+                  hintText: 'Opsional jika ada di database',
                 ),
-                readOnly: true,
-                onTap: () async {
-                  DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.tryParse(_dateController.text) ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2101),
-                  );
-                  if (picked != null) {
-                    _dateController.text = picked.toIso8601String().split('T').first;
-                  }
-                },
               ),
+              const SizedBox(height: 16),
+              if (_latitude != null && _longitude != null)
+                Text('📍 Lokasi: $_latitude, $_longitude',
+                    style: const TextStyle(color: Colors.green)),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitLog,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16)
-                ),
-                child: _isSubmitting 
-                    ? const SizedBox(
-                        height: 20, 
-                        width: 20, 
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                    : const Text('Simpan'),
-              ),
+              _isSubmitting
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton.icon(
+                      icon: const Icon(Icons.save),
+                      label: const Text('Simpan'),
+                      onPressed: _submitLog,
+                    ),
             ],
           ),
         ),
