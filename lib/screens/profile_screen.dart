@@ -15,6 +15,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? name;
   String? email;
 
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+  }
+
   Future<void> loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -34,16 +40,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    loadUserData();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Profile"),
+        title: const Text("Profil"),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -62,7 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MaterialPageRoute(builder: (_) => const EditProfileScreen()),
               );
               if (updated == true) {
-                loadUserData(); // 🔄 Refresh data setelah edit
+                loadUserData();
               }
             },
           ),
@@ -74,11 +74,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("👋 Halo, $name!",
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(
+                    "👋 Halo, $name!",
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
-                  Text(email ?? "Tidak ada email",
-                      style: const TextStyle(fontSize: 18, color: Colors.grey)),
+                  Text(
+                    email ?? "Tidak ada email",
+                    style: const TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: logout,
@@ -87,6 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                     ),
                   ),
                 ],
