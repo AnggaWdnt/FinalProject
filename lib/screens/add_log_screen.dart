@@ -41,11 +41,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
   }
 
   Future<void> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Cek apakah GPS aktif
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('❌ Lokasi tidak aktif. Aktifkan GPS!')),
@@ -53,8 +49,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
       return;
     }
 
-    // Cek izin akses lokasi
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
@@ -72,9 +67,8 @@ class _AddLogScreenState extends State<AddLogScreen> {
       return;
     }
 
-    // Ambil lokasi
-    final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+    final position =
+        await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
 
     setState(() {
       _latitude = position.latitude;
@@ -84,7 +78,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 75);
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -136,14 +130,14 @@ class _AddLogScreenState extends State<AddLogScreen> {
     final calories = int.tryParse(_caloriesController.text.trim()) ?? 0;
 
     await context.read<DailyLogCubit>().addDailyLog(
-      foodName: foodName,
-      portion: portion,
-      unit: _selectedUnit,
-      calories: calories,
-      photo: _imageFile,
-      latitude: _latitude,
-      longitude: _longitude,
-    );
+          foodName: foodName,
+          portion: portion,
+          unit: _selectedUnit,
+          calories: calories,
+          photo: _imageFile,
+          latitude: _latitude,
+          longitude: _longitude,
+        );
 
     setState(() => _isSubmitting = false);
 
@@ -158,7 +152,10 @@ class _AddLogScreenState extends State<AddLogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tambah Log Harian')),
+      appBar: AppBar(
+        title: const Text('Tambah Log Harian'),
+        backgroundColor: Colors.green.shade700,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -188,7 +185,11 @@ class _AddLogScreenState extends State<AddLogScreen> {
               const SizedBox(height: 20),
               TextFormField(
                 controller: _foodNameController,
-                decoration: const InputDecoration(labelText: 'Nama Makanan / Minuman'),
+                decoration: const InputDecoration(
+                  labelText: 'Nama Makanan / Minuman',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.fastfood),
+                ),
                 validator: (value) =>
                     value == null || value.trim().isEmpty ? '⚠ Nama makanan wajib diisi' : null,
               ),
@@ -201,13 +202,21 @@ class _AddLogScreenState extends State<AddLogScreen> {
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedUnit = val);
                 },
-                decoration: const InputDecoration(labelText: 'Satuan (gram/ml/pcs)'),
+                decoration: const InputDecoration(
+                  labelText: 'Satuan (gram/ml/pcs)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.straighten),
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _portionController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Porsi'),
+                decoration: const InputDecoration(
+                  labelText: 'Porsi',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.format_list_numbered),
+                ),
                 validator: (value) =>
                     value == null || value.trim().isEmpty ? '⚠ Porsi wajib diisi' : null,
               ),
@@ -218,18 +227,30 @@ class _AddLogScreenState extends State<AddLogScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Kalori (kcal)',
                   hintText: 'Opsional jika ada di database',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.local_fire_department),
                 ),
               ),
               const SizedBox(height: 16),
               if (_latitude != null && _longitude != null)
-                Text('📍 Lokasi: $_latitude, $_longitude',
-                    style: const TextStyle(color: Colors.green)),
+                Text(
+                  '📍 Lokasi: $_latitude, $_longitude',
+                  style: const TextStyle(color: Colors.green),
+                  textAlign: TextAlign.center,
+                ),
               const SizedBox(height: 24),
               _isSubmitting
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton.icon(
                       icon: const Icon(Icons.save),
                       label: const Text('Simpan'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade700,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       onPressed: _submitLog,
                     ),
             ],

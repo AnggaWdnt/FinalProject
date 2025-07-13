@@ -8,37 +8,51 @@ class AuthService {
   final String baseUrl = 'http://10.0.2.2:8000/api';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    // ... (kode login Anda yang sudah benar)
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {'Accept': 'application/json'},
-        body: {'email': email, 'password': password},
-      ).timeout(const Duration(seconds: 10));
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {'Accept': 'application/json'},
+      body: {'email': email, 'password': password},
+    ).timeout(const Duration(seconds: 10));
 
-      final data = json.decode(response.body);
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return data;
-      } else {
-        throw Exception(data['message'] ?? 'Terjadi kesalahan server');
+    final data = json.decode(response.body);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      // ✅ Ambil field yang benar sesuai Laravel
+      final token = data['access_token'];
+      final userId = data['user']['id'];
+      final userName = data['user']['name'];
+
+      if (token == null || userId == null || userName == null) {
+        throw Exception('Data login tidak lengkap dari server');
       }
-    } on SocketException {
-      throw Exception('Tidak ada koneksi internet.');
-    } on TimeoutException {
-      throw Exception('Server tidak merespons. Coba lagi nanti.');
-    } catch (e) {
-      rethrow;
+
+      // Simpan token & user info
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+      await prefs.setInt('user_id', userId);
+      await prefs.setString('user_name', userName);
+
+      return data;
+    } else {
+      throw Exception(data['message'] ?? 'Login gagal');
     }
+  } on SocketException {
+    throw Exception('Tidak ada koneksi internet.');
+  } on TimeoutException {
+    throw Exception('Server tidak merespons. Coba lagi nanti.');
+  } catch (e) {
+    rethrow;
   }
-  
-  // FUNGSI REGISTER YANG DIPERBAIKI
+}
+
+
+
   Future<Map<String, dynamic>> register(String name, String email, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/register'),
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: {'Accept': 'application/json'},
         body: {
           'name': name,
           'email': email,
@@ -51,7 +65,6 @@ class AuthService {
       if (response.statusCode == 201) {
         return data;
       } else {
-        // Ambil pesan error dari Laravel jika ada
         final errors = data['errors'] as Map<String, dynamic>?;
         if (errors != null && errors.isNotEmpty) {
           throw Exception(errors.values.first[0]);
@@ -67,10 +80,9 @@ class AuthService {
     }
   }
 
-  // FUNGSI LOGOUT TUGASNYA JELAS: MEMBERSIHKAN SHARERED PREFERENCES
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
+    await prefs.remove('auth_token');
     await prefs.remove('user_id');
     await prefs.remove('user_name');
     print("🚪 User logout & data SharedPreferences dihapus");
