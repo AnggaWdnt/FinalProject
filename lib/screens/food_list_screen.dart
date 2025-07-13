@@ -23,50 +23,54 @@ class _FoodListScreenState extends State<FoodListScreen> {
   }
 
   Future<void> fetchFoods() async {
-  try {
-    final response = await http.get(
-      Uri.parse('http://10.0.2.2:8000/api/foods?category_id=${widget.categoryId}'),
-      headers: {'Accept': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      setState(() {
-        foods = json.decode(response.body);
-        isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat data makanan')),
+    try {
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/foods?category_id=${widget.categoryId}'),
+        headers: {'Accept': 'application/json'},
       );
-    }
-  } catch (e) {
-    setState(() {
-      isLoading = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Terjadi kesalahan: $e')),
-    );
-  }
-}
 
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+
+        if (jsonResponse['data'] is List) {
+          setState(() {
+            foods = jsonResponse['data'];
+            isLoading = false;
+          });
+        } else {
+          throw Exception('Data makanan bukan List: ${jsonResponse['data']}');
+        }
+      } else {
+        throw Exception('Gagal memuat makanan: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error fetchFoods: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          foods = [];
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.categoryName)),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : foods.isEmpty
-              ? Center(child: Text('Tidak ada makanan di kategori ini'))
+              ? const Center(child: Text('Tidak ada makanan di kategori ini'))
               : ListView.builder(
                   itemCount: foods.length,
                   itemBuilder: (context, index) {
                     final food = foods[index];
                     return Card(
-                      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                       child: ListTile(
                         title: Text(food['name']),
                         subtitle: Text('${food['calories']} kcal'),
