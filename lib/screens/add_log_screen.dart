@@ -151,13 +151,18 @@ class _AddLogScreenState extends State<AddLogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final greenColor = Colors.green.shade700;
+    final borderRadius = BorderRadius.circular(12);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tambah Log Harian'),
-        backgroundColor: Colors.green.shade700,
+        backgroundColor: greenColor,
+        centerTitle: true,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -168,88 +173,98 @@ class _AddLogScreenState extends State<AddLogScreen> {
                 child: Container(
                   height: 200,
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey.shade200,
+                    borderRadius: borderRadius,
                     border: Border.all(color: Colors.grey.shade400),
                   ),
                   child: _imageFile != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: borderRadius,
                           child: Image.file(_imageFile!, fit: BoxFit.cover),
                         )
-                      : const Center(
-                          child: Icon(Icons.camera_alt, size: 50, color: Colors.grey),
+                      : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.camera_alt, size: 48, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text('Ketuk untuk pilih foto',
+                                  style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
                         ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: _foodNameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Nama Makanan / Minuman',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.fastfood),
+                  border: OutlineInputBorder(borderRadius: borderRadius),
+                  prefixIcon: const Icon(Icons.fastfood),
                 ),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? '⚠ Nama makanan wajib diisi' : null,
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? '⚠ Nama makanan wajib diisi'
+                    : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               DropdownButtonFormField<String>(
                 value: _selectedUnit,
                 items: _unitOptions
-                    .map((unit) => DropdownMenuItem(value: unit, child: Text(unit.toUpperCase())))
+                    .map((unit) =>
+                        DropdownMenuItem(value: unit, child: Text(unit.toUpperCase())))
                     .toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedUnit = val);
                 },
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Satuan (gram/ml/pcs)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.straighten),
+                  border: OutlineInputBorder(borderRadius: borderRadius),
+                  prefixIcon: const Icon(Icons.straighten),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _portionController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Porsi',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.format_list_numbered),
+                  border: OutlineInputBorder(borderRadius: borderRadius),
+                  prefixIcon: const Icon(Icons.format_list_numbered),
                 ),
                 validator: (value) =>
                     value == null || value.trim().isEmpty ? '⚠ Porsi wajib diisi' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _caloriesController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Kalori (kcal)',
                   hintText: 'Opsional jika ada di database',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.local_fire_department),
+                  border: OutlineInputBorder(borderRadius: borderRadius),
+                  prefixIcon: const Icon(Icons.local_fire_department),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               if (_latitude != null && _longitude != null)
                 Text(
-                  '📍 Lokasi: $_latitude, $_longitude',
-                  style: const TextStyle(color: Colors.green),
+                  '📍 Lokasi: ${_latitude!.toStringAsFixed(6)}, ${_longitude!.toStringAsFixed(6)}',
+                  style: TextStyle(color: greenColor, fontWeight: FontWeight.w600),
                   textAlign: TextAlign.center,
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               _isSubmitting
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton.icon(
                       icon: const Icon(Icons.save),
                       label: const Text('Simpan'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade700,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        backgroundColor: greenColor,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                        shape: RoundedRectangleBorder(borderRadius: borderRadius),
+                        elevation: 3,
                       ),
                       onPressed: _submitLog,
                     ),
