@@ -25,37 +25,13 @@ class DailyLogView extends StatefulWidget {
 }
 
 class _DailyLogViewState extends State<DailyLogView> {
-  String userRole = 'user';
   File? imageFile;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserRole();
-  }
-
-  Future<void> _loadUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userRole = prefs.getString('user_role') ?? 'user';
-    });
-  }
 
   void _showAddLogDialog(BuildContext context) {
     final foodController = TextEditingController();
     final portionController = TextEditingController();
     final caloriesController = TextEditingController();
     String unit = 'gram';
-
-    Future<void> pickImage() async {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        setState(() {
-          imageFile = File(pickedFile.path);
-        });
-      }
-    }
 
     showDialog(
       context: context,
@@ -146,7 +122,7 @@ class _DailyLogViewState extends State<DailyLogView> {
             actions: [
               TextButton(
                 onPressed: () {
-                  imageFile = null; // reset image if dialog is closed
+                  imageFile = null;
                   Navigator.pop(context);
                 },
                 child: const Text('Batal'),
@@ -169,7 +145,7 @@ class _DailyLogViewState extends State<DailyLogView> {
                           calories: calories,
                           photo: imageFile,
                         );
-                    imageFile = null; // reset after submit
+                    imageFile = null;
                     Navigator.pop(context);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -277,14 +253,12 @@ class _DailyLogViewState extends State<DailyLogView> {
           }
         },
       ),
-      floatingActionButton: userRole == 'admin'
-          ? null
-          : FloatingActionButton(
-              backgroundColor: Colors.teal,
-              onPressed: () => _showAddLogDialog(context),
-              child: const Icon(Icons.add),
-              tooltip: 'Tambah Log Harian',
-            ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.teal,
+        onPressed: () => _showAddLogDialog(context),
+        child: const Icon(Icons.add),
+        tooltip: 'Tambah Log Harian',
+      ),
     );
   }
 }

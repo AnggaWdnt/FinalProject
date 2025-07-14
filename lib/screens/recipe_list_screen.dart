@@ -15,20 +15,11 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   final String baseUrl = 'http://10.0.2.2:8000';
   List recipes = [];
   bool isLoading = true;
-  String userRole = 'user'; // default
 
   @override
   void initState() {
     super.initState();
-    _loadUserRole();
     fetchRecipes();
-  }
-
-  Future<void> _loadUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userRole = prefs.getString('user_role') ?? 'user';
-    });
   }
 
   Future<void> fetchRecipes() async {
@@ -86,12 +77,12 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Resep berhasil dihapus')),
+        const SnackBar(content: Text('✅ Resep berhasil dihapus')),
       );
       fetchRecipes();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menghapus resep')),
+        const SnackBar(content: Text('❌ Gagal menghapus resep')),
       );
     }
   }
@@ -100,27 +91,27 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Daftar Resep'),
+        title: const Text('Daftar Resep'),
         centerTitle: true,
         backgroundColor: Colors.teal,
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : recipes.isEmpty
-              ? Center(child: Text('Tidak ada resep ditemukan'))
+              ? const Center(child: Text('Belum ada resep.'))
               : ListView.builder(
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   itemCount: recipes.length,
                   itemBuilder: (context, index) {
                     final recipe = recipes[index];
                     return Card(
-                      margin: EdgeInsets.symmetric(vertical: 6),
+                      margin: const EdgeInsets.symmetric(vertical: 6),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 3,
                       child: ListTile(
                         title: Text(
                           recipe['judul'],
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(recipe['deskripsi'] ?? 'Tanpa deskripsi'),
                         onTap: () async {
@@ -132,47 +123,43 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                           );
                           if (shouldRefresh == true) fetchRecipes();
                         },
-                        trailing: userRole == 'admin'
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(Icons.edit, color: Colors.blue),
-                                    onPressed: () async {
-                                      final updated = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => EditRecipeScreen(recipe: recipe),
-                                        ),
-                                      );
-                                      if (updated == true) fetchRecipes();
-                                    },
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () async {
+                                final updated = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditRecipeScreen(recipe: recipe),
                                   ),
-                                  IconButton(
-                                    icon: Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () => deleteRecipe(recipe['id']),
-                                  ),
-                                ],
-                              )
-                            : null,
+                                );
+                                if (updated == true) fetchRecipes();
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => deleteRecipe(recipe['id']),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
                 ),
-      floatingActionButton: userRole == 'admin'
-          ? FloatingActionButton(
-              backgroundColor: Colors.teal,
-              onPressed: () async {
-                final added = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AddRecipeScreen()),
-                );
-                if (added == true) fetchRecipes();
-              },
-              child: Icon(Icons.add),
-              tooltip: 'Tambah Resep',
-            )
-          : null,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.teal,
+        onPressed: () async {
+          final added = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddRecipeScreen()),
+          );
+          if (added == true) fetchRecipes();
+        },
+        child: const Icon(Icons.add),
+        tooltip: 'Tambah Resep',
+      ),
     );
   }
 }

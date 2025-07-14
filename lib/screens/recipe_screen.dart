@@ -11,23 +11,22 @@ class RecipeScreen extends StatefulWidget {
 }
 
 class _RecipeScreenState extends State<RecipeScreen> {
-  String userRole = 'user';
   final String baseUrl = 'http://10.0.2.2:8000';
   List recipes = [];
   bool isLoading = true;
   String? errorMessage;
 
   @override
-  void initState() {
-    super.initState();
-    loadUserRole();
-    fetchRecipes();
-  }
+void initState() {
+  super.initState();
+  fetchRecipes();
+}
+
 
   Future<void> loadUserRole() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      userRole = prefs.getString('user_role') ?? 'user';
+    prefs.getString('user_role') ?? 'user';
     });
   }
 
@@ -111,23 +110,21 @@ class _RecipeScreenState extends State<RecipeScreen> {
         backgroundColor: Colors.teal,
       ),
       body: _buildBody(),
-      floatingActionButton: userRole == 'admin'
-          ? FloatingActionButton(
-              backgroundColor: Colors.teal,
-              child: const Icon(Icons.add),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AddRecipeScreen()),
-                ).then((result) {
-                  if (result == true) {
-                    fetchRecipes();
-                  }
-                });
-              },
-              tooltip: 'Tambah Resep',
-            )
-          : null,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.teal,
+        child: const Icon(Icons.add),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddRecipeScreen()),
+          ).then((result) {
+            if (result == true) {
+              fetchRecipes();
+            }
+          });
+        },
+        tooltip: 'Tambah Resep',
+      ),
     );
   }
 
@@ -193,13 +190,13 @@ class _RecipeScreenState extends State<RecipeScreen> {
                   style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
               ),
-              trailing: userRole == 'admin'
-                  ? IconButton(
+              trailing: 
+                   IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () => _showDeleteConfirmDialog(recipe['id']),
                       tooltip: 'Hapus Resep',
                     )
-                  : null,
+                   ,
               onTap: () {
                 // TODO: Navigasi ke halaman detail atau edit resep jika perlu
               },

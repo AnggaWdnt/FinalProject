@@ -18,20 +18,16 @@ class AuthService {
     final data = json.decode(response.body);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      // ✅ Ambil field yang benar sesuai Laravel
       final token = data['access_token'];
-      final userId = data['user']['id'];
-      final userName = data['user']['name'];
 
-      if (token == null || userId == null || userName == null) {
-        throw Exception('Data login tidak lengkap dari server');
+      if (token == null) {
+        throw Exception('Token tidak ditemukan dari server');
       }
 
-      // Simpan token & user info
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', token);
-      await prefs.setInt('user_id', userId);
-      await prefs.setString('user_name', userName);
+
+      print("🎉 Token berhasil disimpan: $token");
 
       return data;
     } else {
@@ -45,6 +41,7 @@ class AuthService {
     rethrow;
   }
 }
+
 
 
 
@@ -81,10 +78,12 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('user_id');
-    await prefs.remove('user_name');
-    print("🚪 User logout & data SharedPreferences dihapus");
-  }
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('auth_token');
+  await prefs.remove('user_id');
+  await prefs.remove('user_name');
+  await prefs.remove('user_role'); // ⬅️ hapus role juga
+  print("🚪 User logout & data SharedPreferences dihapus");
+}
+
 }

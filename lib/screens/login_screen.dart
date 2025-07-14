@@ -36,25 +36,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (response['status'] == 'success') {
-        final prefs = await SharedPreferences.getInstance();
-        final token = response['access_token'];
-        final user = response['user'];
-
-        if (token != null && user != null && user['id'] != null) {
-          await prefs.setString('token', token);
-          await prefs.setInt('user_id', user['id']);
-          await prefs.setString('user_name', user['name']);
-          await prefs.setString('user_email', user['email']); // ✅ simpan email
-
-          print('✅ Token & User Info berhasil disimpan!');
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
-          );
-        } else {
-          setState(() => errorMessage = 'Respons server tidak lengkap.');
-        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
       } else {
         setState(() => errorMessage = response['message'] ?? 'Terjadi kesalahan');
       }
@@ -100,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Bantu kamu hidup lebih sehat dengan resep dan catat log harian",
+                  "Bantu kamu hidup lebih sehat dengan resep dan log harian",
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black54),
                 ),
